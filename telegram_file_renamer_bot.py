@@ -1,10 +1,14 @@
 import os
 import json
-import ffmpeg  # BUT make sure your requirements.txt has the correct name
+import ffmpeg
 from dotenv import load_dotenv
 from telegram import Update, Document
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
 )
 
 load_dotenv()
@@ -93,8 +97,7 @@ def convert_mkv_to_mp4(input_path, output_path):
 
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_approved(update.effective_user.id):
-        await update.message.reply_text("You're not approved to use this bot.")
-        return
+        return await update.message.reply_text("You're not approved to use this bot.")
     file = update.message.document or update.message.video
     if file:
         context.user_data['file'] = file
@@ -115,8 +118,8 @@ async def rename_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_ext = os.path.splitext(file.file_name)[1]
     final_name = f"{prefix}{new_name}{suffix}{file_ext}"
 
-    file_obj = await file.get_file()
-    downloaded_path = await file_obj.download_to_drive(custom_path=file.file_name)
+    telegram_file = await file.get_file()
+    downloaded_path = await telegram_file.download_to_drive(custom_path=file.file_name)
 
     if file_ext.lower() == ".mkv" and convert_mkv:
         converted_name = final_name.replace(".mkv", ".mp4")
@@ -142,9 +145,10 @@ async def main():
     app.add_handler(CommandHandler("setsuffix", set_suffix))
     app.add_handler(CommandHandler("toggleconversion", toggle_conversion))
     app.add_handler(CommandHandler("approve", approve_user))
-    app.add_handler(MessageHandler(filters.Document.ALL | filters.Video.ALL, handle_file))
+    app.add_handler(MessageHandler(filters.Document.ALL | filters.Video, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, rename_file))
 
+    print("Bot is running...")
     await app.run_polling()
 
 
